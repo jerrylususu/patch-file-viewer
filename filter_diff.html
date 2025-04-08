@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patch Semantic Filter</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .input-container, .output-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            resize: vertical;
+            background-color: #fff;
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .stats {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .file-list {
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 4px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .file-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-name {
+            font-weight: bold;
+        }
+        .file-status {
+            font-size: 14px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            color: white;
+        }
+        .status-semantic {
+            background-color: #e74c3c;
+        }
+        .status-whitespace {
+            background-color: #2ecc71;
+        }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Patch Semantic Filter</h1>
+    <p>Filter out whitespace-only changes from patch files to focus on meaningful code changes during code reviews.</p>
+    
+    <div class="stats" id="stats">
+        <h3>Statistics</h3>
+        <p>Paste a patch file to analyze changes.</p>
+    </div>
+    
+    <div class="container">
+        <div class="input-container">
+            <h2>Input Patch</h2>
+            <textarea id="inputPatch" placeholder="Paste your .patch file content here..."></textarea>
+        </div>
+        <div class="output-container">
+            <h2>Filtered Patch</h2>
+            <textarea id="outputPatch" placeholder="Filtered patch will appear here..." readonly></textarea>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="filterButton">Filter Whitespace Changes</button>
+    </div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Processing patch file...</p>
+    </div>
+    
+    <div class="file-list" id="fileList">
+        <h3>Files Changed</h3>
+        <p>Files will be listed here after analysis.</p>
+    </div>
+
+    <script src="https://unpkg.com/diff@5.1.0/dist/diff.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

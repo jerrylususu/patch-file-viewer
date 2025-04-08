@@ -3,102 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patch Semantic Filter</title>
+    <title>Git Patch Viewer</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
             line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 30px;
         }
         .container {
             display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
+            height: 100vh;
         }
-        .input-container, .output-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        textarea {
-            width: 100%;
-            height: 400px;
+        .sidebar {
+            width: 300px;
+            border-right: 1px solid #ccc;
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
-            resize: vertical;
-            background-color: #fff;
+            overflow-y: auto;
         }
-        .controls {
-            margin: 20px 0;
-            text-align: center;
+        .main-content {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
         }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
+        .patch-input {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
         }
-        button:hover {
-            background-color: #2980b9;
+        .file-tree {
+            margin-top: 10px;
         }
-        .stats {
-            background-color: #fff;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        .file-tree ul {
+            list-style-type: none;
+            padding-left: 20px;
         }
-        .file-list {
-            margin-top: 20px;
-            background-color: #fff;
-            border-radius: 4px;
-            padding: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        .file-tree > ul {
+            padding-left: 0;
         }
         .file-item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 3px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
-        .file-item:last-child {
-            border-bottom: none;
+        .file-item:hover {
+            background-color: #f0f0f0;
         }
-        .file-name {
+        .file-item.selected {
+            background-color: #e0e0e0;
+        }
+        .file-item.whitespace-only {
+            color: #888;
+        }
+        .file-icon, .folder-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-right: 5px;
+        }
+        .file-icon::before {
+            content: '📄';
+        }
+        .folder-icon::before {
+            content: '📁';
+        }
+        .folder.expanded .folder-icon::before {
+            content: "📂";
+        }
+        .file-icon::before {
+            content: "📄";
+        }
+        .file-count {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 5px;
+        }
+        .diff-view {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .diff-header {
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
             font-weight: bold;
         }
-        .file-status {
-            font-size: 14px;
-            padding: 3px 8px;
+        .diff-hunk {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .hunk-header {
+            background-color: #f0f0f0;
+            padding: 5px 10px;
+            color: #666;
+            border-bottom: 1px solid #ddd;
+        }
+        .diff-line {
+            display: flex;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }
+        .line-number {
+            width: 40px;
+            text-align: right;
+            padding-right: 10px;
+            color: #999;
+            background-color: #f8f8f8;
+            user-select: none;
+        }
+        .line-content {
+            flex: 1;
+            white-space: pre;
+            padding-left: 5px;
+        }
+        .diff-line.added .line-content {
+            background-color: #e6ffed;
+        }
+        .diff-line.added .line-number {
+            background-color: #cdffd8;
+        }
+        .diff-line.removed .line-content {
+            background-color: #ffeef0;
+        }
+        .diff-line.removed .line-number {
+            background-color: #ffdce0;
+        }
+        .patch-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            font-family: monospace;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
             border-radius: 3px;
-            color: white;
+            font-size: 0.8em;
+            margin-left: 5px;
         }
-        .status-semantic {
-            background-color: #e74c3c;
+        .status-added {
+            background-color: #e6ffed;
+            color: #22863a;
         }
-        .status-whitespace {
-            background-color: #2ecc71;
+        .status-modified {
+            background-color: #fff5b1;
+            color: #735c0f;
+        }
+        .status-deleted {
+            background-color: #ffeef0;
+            color: #cb2431;
         }
         .loading {
-            text-align: center;
-            margin: 20px 0;
             display: none;
+            text-align: center;
+            padding: 20px;
         }
         .spinner {
             border: 4px solid #f3f3f3;
@@ -113,43 +184,590 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
-    <h1>Patch Semantic Filter</h1>
-    <p>Filter out whitespace-only changes from patch files to focus on meaningful code changes during code reviews.</p>
-    
-    <div class="stats" id="stats">
-        <h3>Statistics</h3>
-        <p>Paste a patch file to analyze changes.</p>
-    </div>
-    
     <div class="container">
-        <div class="input-container">
-            <h2>Input Patch</h2>
-            <textarea id="inputPatch" placeholder="Paste your .patch file content here..."></textarea>
+        <div class="sidebar">
+            <h2>Files</h2>
+            <div>
+                <input type="file" id="patchFile" accept=".patch,.diff">
+                <button id="loadPatchBtn">Load Patch</button>
+                <button id="loadExampleBtn">Load Example</button>
+            </div>
+            <div>
+                <textarea id="patchInput" class="patch-input" placeholder="...or paste patch content here"></textarea>
+                <button id="viewPatchBtn">View Patch</button>
+            </div>
+            <div class="file-tree" id="fileTree">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Loading patch...</p>
+                </div>
+                <ul id="fileTreeList"></ul>
+            </div>
         </div>
-        <div class="output-container">
-            <h2>Filtered Patch</h2>
-            <textarea id="outputPatch" placeholder="Filtered patch will appear here..." readonly></textarea>
+        <div class="main-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 id="currentFile">Select a file to view changes</h2>
+                <div>
+                    <button id="lineByLineBtn" class="active">Line by Line</button>
+                    <button id="sideBySideBtn">Side by Side</button>
+                    <button id="toggleWhitespaceBtn">Hide Whitespace Changes</button>
+                </div>
+            </div>
+            <div id="stats" style="margin-bottom: 10px; padding: 10px; background-color: #f8f8f8; border-radius: 4px;">
+                <h3>Statistics</h3>
+                <p>Load a patch file to see statistics</p>
+            </div>
+            <div class="diff-view" id="diffView">
+                <p>Select a file from the tree to view changes</p>
+            </div>
         </div>
-    </div>
-    
-    <div class="controls">
-        <button id="filterButton">Filter Whitespace Changes</button>
-    </div>
-    
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p>Processing patch file...</p>
-    </div>
-    
-    <div class="file-list" id="fileList">
-        <h3>Files Changed</h3>
-        <p>Files will be listed here after analysis.</p>
     </div>
 
-    <script src="https://unpkg.com/diff@5.1.0/dist/diff.js"></script>
-    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileTreeList = document.getElementById('fileTreeList');
+            const diffView = document.getElementById('diffView');
+            const currentFile = document.getElementById('currentFile');
+            const patchInput = document.getElementById('patchInput');
+            const viewPatchBtn = document.getElementById('viewPatchBtn');
+            const loadPatchBtn = document.getElementById('loadPatchBtn');
+            const patchFile = document.getElementById('patchFile');
+            const loading = document.getElementById('loading');
+            const lineByLineBtn = document.getElementById('lineByLineBtn');
+            const sideBySideBtn = document.getElementById('sideBySideBtn');
+            const toggleWhitespaceBtn = document.getElementById('toggleWhitespaceBtn');
+            const statsElement = document.getElementById('stats');
+            
+            let currentViewMode = 'line-by-line';
+            let currentPatch = '';
+            let filePatches = [];
+            let fileTree = {};
+            let hideWhitespaceChanges = false;
+            let patchStats = {
+                totalFiles: 0,
+                semanticFiles: 0,
+                whitespaceOnlyFiles: 0,
+                totalHunks: 0,
+                semanticHunks: 0,
+                whitespaceOnlyHunks: 0
+            };
+            
+            // Event listeners
+            viewPatchBtn.addEventListener('click', () => {
+                const patchContent = patchInput.value.trim();
+                if (patchContent) {
+                    processPatch(patchContent);
+                } else {
+                    alert('Please paste a patch file first!');
+                }
+            });
+            
+            loadPatchBtn.addEventListener('click', () => {
+                patchFile.click();
+            });
+            
+            loadExampleBtn.addEventListener('click', () => {
+                // Load the example patch file
+                fetch('example.patch')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to load example patch file');
+                        }
+                        return response.text();
+                    })
+                    .then(patchContent => {
+                        patchInput.value = patchContent;
+                        processPatch(patchContent);
+                    })
+                    .catch(error => {
+                        console.error('Error loading example patch:', error);
+                        alert('Error loading example patch: ' + error.message);
+                    });
+            });
+            
+            patchFile.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        patchInput.value = e.target.result;
+                        processPatch(e.target.result);
+                    };
+                    reader.readAsText(file);
+                }
+            });
+            
+            lineByLineBtn.addEventListener('click', () => {
+                lineByLineBtn.classList.add('active');
+                sideBySideBtn.classList.remove('active');
+                currentViewMode = 'line-by-line';
+                refreshDiffView();
+            });
+            
+            sideBySideBtn.addEventListener('click', () => {
+                sideBySideBtn.classList.add('active');
+                lineByLineBtn.classList.remove('active');
+                currentViewMode = 'side-by-side';
+                refreshDiffView();
+            });
+            
+            toggleWhitespaceBtn.addEventListener('click', () => {
+                hideWhitespaceChanges = !hideWhitespaceChanges;
+                toggleWhitespaceBtn.textContent = hideWhitespaceChanges ? 'Show Whitespace Changes' : 'Hide Whitespace Changes';
+                refreshDiffView();
+            });
+            
+            // Process the patch content
+            function processPatch(patchContent) {
+                loading.style.display = 'block';
+                currentPatch = patchContent;
+                
+                // Reset statistics
+                patchStats = {
+                    totalFiles: 0,
+                    semanticFiles: 0,
+                    whitespaceOnlyFiles: 0,
+                    totalHunks: 0,
+                    semanticHunks: 0,
+                    whitespaceOnlyHunks: 0
+                };
+                
+                // Use setTimeout to allow the UI to update before processing
+                setTimeout(() => {
+                    try {
+                        filePatches = splitPatchIntoFiles(patchContent);
+                        patchStats.totalFiles = filePatches.length;
+                        
+                        // Analyze each file for whitespace-only changes
+                        filePatches.forEach(file => {
+                            let hasSemanticChanges = false;
+                            file.hunks.forEach(hunk => {
+                                patchStats.totalHunks++;
+                                const isWhitespaceOnly = isWhitespaceOnlyHunk(hunk);
+                                if (isWhitespaceOnly) {
+                                    patchStats.whitespaceOnlyHunks++;
+                                    file.hunks[file.hunks.indexOf(hunk)] = {
+                                        content: hunk,
+                                        isWhitespaceOnly: true
+                                    };
+                                } else {
+                                    patchStats.semanticHunks++;
+                                    hasSemanticChanges = true;
+                                    file.hunks[file.hunks.indexOf(hunk)] = {
+                                        content: hunk,
+                                        isWhitespaceOnly: false
+                                    };
+                                }
+                            });
+                            
+                            file.isWhitespaceOnly = !hasSemanticChanges && file.hunks.length > 0;
+                            if (file.isWhitespaceOnly) {
+                                patchStats.whitespaceOnlyFiles++;
+                            } else if (file.hunks.length > 0) {
+                                patchStats.semanticFiles++;
+                            }
+                        });
+                        
+                        fileTree = buildFileTree(filePatches);
+                        renderFileTree(fileTree);
+                        updateStatistics();
+                        diffView.innerHTML = '<p>Select a file from the tree to view changes</p>';
+                        currentFile.textContent = 'Select a file to view changes';
+                    } catch (error) {
+                        console.error('Error processing patch:', error);
+                        alert('Error processing patch: ' + error.message);
+                    } finally {
+                        loading.style.display = 'none';
+                    }
+                }, 50);
+            }
+            
+            // Split the patch into individual file patches
+            function splitPatchIntoFiles(patchContent) {
+                const files = [];
+                const diffGitRegex = /diff --git a\/(.*?) b\/(.*?)(?=\ndiff --git|\n?$)/gs;
+                
+                let match;
+                while ((match = diffGitRegex.exec(patchContent + '\n'))) {
+                    const filePatch = match[0];
+                    const fileNameMatch = filePatch.match(/diff --git a\/(.*?) b\/(.*?)\n/);
+                    
+                    if (fileNameMatch) {
+                        const fileName = fileNameMatch[2]; // Use the 'b' path as the filename
+                        
+                        // Extract file status
+                        let status = 'modified';
+                        if (filePatch.includes('new file mode')) {
+                            status = 'added';
+                        } else if (filePatch.includes('deleted file mode')) {
+                            status = 'deleted';
+                        }
+                        
+                        // Parse hunks
+                        const hunks = [];
+                        const hunkRegex = /@@ -(\d+),(\d+) \+(\d+),(\d+) @@(.*?)(?=\n@@|$)/gs;
+                        let hunkMatch;
+                        let lastIndex = filePatch.indexOf('@@');
+                        
+                        while ((hunkMatch = hunkRegex.exec(filePatch))) {
+                            const hunkHeader = hunkMatch[0];
+                            const startPos = hunkMatch.index;
+                            const endPos = hunkMatch.index + hunkHeader.length;
+                            
+                            // Find the start of the next hunk or the end of the file
+                            const nextHunkStart = filePatch.indexOf('@@', endPos);
+                            const hunkEnd = nextHunkStart !== -1 ? nextHunkStart : filePatch.length;
+                            
+                            // Extract the hunk content including the header
+                            const hunkContent = filePatch.substring(startPos, hunkEnd);
+                            hunks.push(hunkContent);
+                            
+                            lastIndex = hunkEnd;
+                        }
+                        
+                        files.push({
+                            name: fileName,
+                            status: status,
+                            header: filePatch.substring(0, lastIndex),
+                            hunks: hunks,
+                            isWhitespaceOnly: false // Will be determined later
+                        });
+                    }
+                }
+                
+                return files;
+            }
+            
+            // Determine if a hunk contains only whitespace changes
+            function isWhitespaceOnlyHunk(hunk) {
+                const lines = hunk.split('\n');
+                const addedLines = [];
+                const removedLines = [];
+                
+                // Skip the header line
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!line) continue;
+                    
+                    const firstChar = line.charAt(0);
+                    if (firstChar === '+') {
+                        addedLines.push(line.substring(1));
+                    } else if (firstChar === '-') {
+                        removedLines.push(line.substring(1));
+                    }
+                }
+                
+                // If there are no added or removed lines, it's not a whitespace-only change
+                if (addedLines.length === 0 || removedLines.length === 0) {
+                    return false;
+                }
+                
+                // Check if the only differences are whitespace
+                return isWhitespaceOnlyChange(removedLines, addedLines);
+            }
+            
+            // Compare two sets of lines to determine if they differ only in whitespace
+            function isWhitespaceOnlyChange(oldLines, newLines) {
+                // If the number of lines is different, we need more complex analysis
+                if (oldLines.length !== newLines.length) {
+                    // For multi-line reformatting, join the lines and compare
+                    const oldContent = oldLines.join('');
+                    const newContent = newLines.join('');
+                    
+                    // Remove all whitespace and compare
+                    return oldContent.replace(/\s+/g, '') === newContent.replace(/\s+/g, '');
+                } else {
+                    // Line-by-line comparison
+                    for (let i = 0; i < oldLines.length; i++) {
+                        const oldLine = oldLines[i];
+                        const newLine = newLines[i];
+                        
+                        // Remove all whitespace and compare
+                        if (oldLine.replace(/\s+/g, '') !== newLine.replace(/\s+/g, '')) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+            
+            // Update the statistics display
+            function updateStatistics() {
+                statsElement.innerHTML = `
+                    <h3>Statistics</h3>
+                    <div>
+                        <p><strong>Files:</strong> ${patchStats.totalFiles} total, 
+                           ${patchStats.semanticFiles} with semantic changes, 
+                           ${patchStats.whitespaceOnlyFiles} with whitespace-only changes</p>
+                        <p><strong>Hunks:</strong> ${patchStats.totalHunks} total, 
+                           ${patchStats.semanticHunks} with semantic changes, 
+                           ${patchStats.whitespaceOnlyHunks} with whitespace-only changes</p>
+                    </div>
+                `;
+            }
+            
+            // Build a hierarchical file tree
+            function buildFileTree(filePatches) {
+                const tree = {};
+                
+                filePatches.forEach(file => {
+                    const parts = file.name.split('/');
+                    let currentLevel = tree;
+                    
+                    parts.forEach((part, index) => {
+                        if (index === parts.length - 1) {
+                            // This is a file
+                            if (!currentLevel.files) {
+                                currentLevel.files = [];
+                            }
+                            currentLevel.files.push({
+                                name: part,
+                                fullPath: file.name,
+                                status: file.status
+                            });
+                        } else {
+                            // This is a directory
+                            if (!currentLevel.dirs) {
+                                currentLevel.dirs = {};
+                            }
+                            if (!currentLevel.dirs[part]) {
+                                currentLevel.dirs[part] = {};
+                            }
+                            currentLevel = currentLevel.dirs[part];
+                        }
+                    });
+                });
+                
+                return tree;
+            }
+            
+            // Render the file tree
+            function renderFileTree(tree) {
+                fileTreeList.innerHTML = '';
+                
+                // Helper function to create directory elements
+                function createDirElement(name, level = 0) {
+                    const li = document.createElement('li');
+                    const div = document.createElement('div');
+                    div.className = 'file-item folder';
+                    div.innerHTML = `
+                        <span class="folder-icon"></span>
+                        <span>${name}</span>
+                    `;
+                    div.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        div.classList.toggle('expanded');
+                        const ul = div.nextElementSibling;
+                        if (ul) {
+                            ul.style.display = ul.style.display === 'none' ? 'block' : 'none';
+                        }
+                    });
+                    li.appendChild(div);
+                    return li;
+                }
+                
+                // Helper function to create file elements
+                function createFileElement(file) {
+                    const li = document.createElement('li');
+                    const div = document.createElement('div');
+                    div.className = 'file-item';
+                    div.dataset.path = file.fullPath;
+                    
+                    // Find the actual file patch to check if it's whitespace-only
+                    const filePatch = filePatches.find(patch => patch.name === file.fullPath);
+                    if (filePatch && filePatch.isWhitespaceOnly) {
+                        div.classList.add('whitespace-only');
+                    }
+                    
+                    // Hide whitespace-only files if the filter is active
+                    if (hideWhitespaceChanges && filePatch && filePatch.isWhitespaceOnly) {
+                        li.style.display = 'none';
+                    }
+                    
+                    let statusBadge = '';
+                    if (file.status === 'added') {
+                        statusBadge = '<span class="status-badge status-added">Added</span>';
+                    } else if (file.status === 'deleted') {
+                        statusBadge = '<span class="status-badge status-deleted">Deleted</span>';
+                    } else if (file.status === 'modified') {
+                        statusBadge = '<span class="status-badge status-modified">Modified</span>';
+                    }
+                    
+                    // Add whitespace-only badge if applicable
+                    if (filePatch && filePatch.isWhitespaceOnly) {
+                        statusBadge += '<span class="status-badge status-whitespace">Whitespace Only</span>';
+                    }
+                    
+                    div.innerHTML = `
+                        <span class="file-icon"></span>
+                        <span>${file.name}</span>
+                        ${statusBadge}
+                    `;
+                    
+                    div.addEventListener('click', () => {
+                        document.querySelectorAll('.file-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        div.classList.add('selected');
+                        displayFileDiff(file.fullPath);
+                    });
+                    
+                    li.appendChild(div);
+                    return li;
+                }
+                
+                // Recursive function to build the tree
+                function buildTreeUI(tree, parentElement, level = 0) {
+                    // Add directories
+                    if (tree.dirs) {
+                        const dirNames = Object.keys(tree.dirs).sort();
+                        dirNames.forEach(dirName => {
+                            const dirElement = createDirElement(dirName, level);
+                            const childrenContainer = document.createElement('ul');
+                            childrenContainer.style.display = level < 1 ? 'block' : 'none';
+                            buildTreeUI(tree.dirs[dirName], childrenContainer, level + 1);
+                            dirElement.appendChild(childrenContainer);
+                            parentElement.appendChild(dirElement);
+                        });
+                    }
+                    
+                    // Add files
+                    if (tree.files) {
+                        const sortedFiles = [...tree.files].sort((a, b) => a.name.localeCompare(b.name));
+                        sortedFiles.forEach(file => {
+                            parentElement.appendChild(createFileElement(file));
+                        });
+                    }
+                }
+                
+                buildTreeUI(tree, fileTreeList);
+            }
+            
+            // Refresh the current diff view when changing view modes
+            function refreshDiffView() {
+                const selectedFile = document.querySelector('.file-item.selected');
+                if (selectedFile) {
+                    displayFileDiff(selectedFile.dataset.path);
+                }
+            }
+            
+            // Display the diff for a selected file
+            function displayFileDiff(filePath) {
+                const filePatch = filePatches.find(patch => patch.name === filePath);
+                
+                if (!filePatch) {
+                    diffView.innerHTML = '<p>File not found in patch</p>';
+                    return;
+                }
+                
+                currentFile.textContent = filePath;
+                
+                if (currentViewMode === 'line-by-line') {
+                    renderLineByLineDiff(filePatch);
+                } else {
+                    renderSideBySideDiff(filePatch);
+                }
+            }
+
+            // Render line-by-line diff view
+            function renderLineByLineDiff(filePatch) {
+                let html = `
+                    <div class="diff-header">
+                        ${filePatch.name} 
+                        <span class="status-badge status-${filePatch.status}">${filePatch.status}</span>
+                        ${filePatch.isWhitespaceOnly ? '<span class="status-badge status-whitespace">Whitespace Only</span>' : ''}
+                    </div>
+                `;
+                
+                filePatch.hunks.forEach(hunk => {
+                    // Skip whitespace-only hunks if the filter is active
+                    if (hideWhitespaceChanges && hunk.isWhitespaceOnly) {
+                        return;
+                    }
+                    
+                    const hunkContent = hunk.content || hunk; // Handle both objects and strings
+                    const hunkLines = hunkContent.split('\n');
+                    const hunkHeader = hunkLines[0];
+                    
+                    html += `<div class="diff-hunk ${hunk.isWhitespaceOnly ? 'whitespace-only-hunk' : ''}">
+                        <div class="hunk-header">
+                            ${hunkHeader}
+                            ${hunk.isWhitespaceOnly ? '<span class="status-badge status-whitespace">Whitespace Only</span>' : ''}
+                        </div>
+                    `;
+                    
+                    let oldLineNumber = parseInt(hunkHeader.match(/-\d+,(\d+)/) ? hunkHeader.match(/-\d+,(\d+)/)[1] : 0);
+                    let newLineNumber = parseInt(hunkHeader.match(/\+\d+,(\d+)/) ? hunkHeader.match(/\+\d+,(\d+)/)[1] : 0);
+                    
+                    // Skip the header line
+                    for (let i = 1; i < hunkLines.length; i++) {
+                        const line = hunkLines[i];
+                        if (!line) continue;
+                        
+                        const firstChar = line.charAt(0);
+                        
+                        if (firstChar === '+') {
+                            // Added line
+                            html += `<div class="diff-line added"><div class="line-number"></div><div class="line-number">${newLineNumber++}</div><div class="line-content">${escapeHtml(line)}</div></div>`;
+                        } else if (firstChar === '-') {
+                            // Removed line
+                            html += `<div class="diff-line removed"><div class="line-number">${oldLineNumber++}</div><div class="line-number"></div><div class="line-content">${escapeHtml(line)}</div></div>`;
+                        } else if (firstChar === ' ') {
+                            // Context line
+                            html += `<div class="diff-line"><div class="line-number">${oldLineNumber++}</div><div class="line-number">${newLineNumber++}</div><div class="line-content">${escapeHtml(line)}</div></div>`;
+                        } else if (firstChar === '\\') {
+                            // No newline at end of file
+                            html += `<div class="diff-line"><div class="line-number"></div><div class="line-number"></div><div class="line-content">${escapeHtml(line)}</div></div>`;
+                        }
+                    }
+                    
+                    html += `</div>`; // Close diff-hunk
+                });
+                
+                // Show a message if all hunks are filtered out
+                if (html.indexOf('<div class="diff-hunk') === -1) {
+                    if (hideWhitespaceChanges && filePatch.isWhitespaceOnly) {
+                        html += `<p>All changes in this file are whitespace-only and are currently hidden.</p>`;
+                    } else {
+                        html += `<p>No changes to display for this file.</p>`;
+                    }
+                }
+                
+                diffView.innerHTML = html;
+            }
+            
+            // Render side-by-side diff view
+            function renderSideBySideDiff(filePatch) {
+                // For simplicity, we'll use the line-by-line view for now
+                // A full side-by-side implementation would be more complex
+                renderLineByLineDiff(filePatch);
+            }
+            
+            // Helper function to escape HTML
+            function escapeHtml(str) {
+                return str
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+        });
+    </script>
 </body>
 </html>
