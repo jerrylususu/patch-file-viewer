@@ -109,6 +109,9 @@
         }
         .diff-line {
             display: flex;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
         }
         .line-number {
             width: 40px;
@@ -123,17 +126,11 @@
             white-space: pre;
             padding-left: 5px;
         }
-        .diff-line.added {
-            background-color: #e6ffed;
-        }
         .diff-line.added .line-content {
             background-color: #e6ffed;
         }
         .diff-line.added .line-number {
             background-color: #cdffd8;
-        }
-        .diff-line.removed {
-            background-color: #ffeef0;
         }
         .diff-line.removed .line-content {
             background-color: #ffeef0;
@@ -726,40 +723,16 @@
                         
                         if (firstChar === '+') {
                             // Added line
-                            html += `
-                                <div class="diff-line added">
-                                    <div class="line-number"></div>
-                                    <div class="line-number">${newLineNumber++}</div>
-                                    <div class="line-content">${escapeHtml(line)}</div>
-                                </div>
-                            `;
+                            html += `<div class="diff-line added"><div class="line-number"></div><div class="line-number">${newLineNumber++}</div><div class="line-content">${escapeHtml(line)}</div></div>`;
                         } else if (firstChar === '-') {
                             // Removed line
-                            html += `
-                                <div class="diff-line removed">
-                                    <div class="line-number">${oldLineNumber++}</div>
-                                    <div class="line-number"></div>
-                                    <div class="line-content">${escapeHtml(line)}</div>
-                                </div>
-                            `;
+                            html += `<div class="diff-line removed"><div class="line-number">${oldLineNumber++}</div><div class="line-number"></div><div class="line-content">${escapeHtml(line)}</div></div>`;
                         } else if (firstChar === ' ') {
                             // Context line
-                            html += `
-                                <div class="diff-line">
-                                    <div class="line-number">${oldLineNumber++}</div>
-                                    <div class="line-number">${newLineNumber++}</div>
-                                    <div class="line-content">${escapeHtml(line)}</div>
-                                </div>
-                            `;
+                            html += `<div class="diff-line"><div class="line-number">${oldLineNumber++}</div><div class="line-number">${newLineNumber++}</div><div class="line-content">${escapeHtml(line)}</div></div>`;
                         } else if (firstChar === '\\') {
                             // No newline at end of file
-                            html += `
-                                <div class="diff-line">
-                                    <div class="line-number"></div>
-                                    <div class="line-number"></div>
-                                    <div class="line-content">${escapeHtml(line)}</div>
-                                </div>
-                            `;
+                            html += `<div class="diff-line"><div class="line-number"></div><div class="line-number"></div><div class="line-content">${escapeHtml(line)}</div></div>`;
                         }
                     }
                     
