@@ -1,0 +1,128 @@
+diff --git a/src/utils.cpp b/src/utils.cpp
+index 1234567..abcdef0 100644
+--- a/src/utils.cpp
++++ b/src/utils.cpp
+@@ -10,7 +10,7 @@
+ 
+ namespace MyProject {
+ 
+-std::string formatDateTime(const std::time_t& time)    {
++std::string formatDateTime(const std::time_t& time) {
+     char buffer[80];
+     std::tm* timeinfo = std::localtime(&time);
+     std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
+@@ -25,9 +25,9 @@ bool isValidEmail(const std::string& email) {
+     std::regex emailRegex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+     return std::regex_match(email, emailRegex);
+ }
+-
+-int calculateChecksum(   const std::vector<int>& data) {
+-    int sum = 0;
++
++int calculateChecksum(const std::vector<int>& data) {
++    int sum = 0;
+     for (const auto& value : data) {
+         sum += value;
+     }
+@@ -42,14 +42,14 @@ std::vector<std::string> splitString(const std::string& input, char delimiter) {
+     std::istringstream stream(input);
+     std::string token;
+     
+-    while (std::getline(    stream, token, delimiter)) {
+-        if (!token.empty()) {
+-            result.push_back(token);
+-        }
+-    }
++    while (std::getline(stream, token, delimiter)) {
++        if (!token.empty()) {
++            result.push_back(token);
++        }
++    }
+     
+     return result;
+ }
+ 
+-} // namespace MyProject
++}  // namespace MyProject
+diff --git a/src/processor.cpp b/src/processor.cpp
+index 9876543..fedcba0 100644
+--- a/src/processor.cpp
++++ b/src/processor.cpp
+@@ -15,7 +15,7 @@ Processor::Processor(const Config& config)
+ 
+ void Processor::initialize() {
+     if (m_isInitialized) {
+-        return;
++        return; // Already initialized
+     }
+     
+     m_logger.log("Initializing processor...");
+@@ -30,8 +30,9 @@ void Processor::process(const Data& data) {
+     m_logger.log("Processing data...");
+     
+     // Process the data
+-    auto result = m_calculator.compute(data.values);
+-    m_results.push_back(result);
++    double factor = 1.5;  // Apply scaling factor
++    auto result = m_calculator.compute(data.values, factor);
++    m_results.push_back(result * factor);
+     
+     m_logger.log("Processing complete.");
+ }
+@@ -55,7 +56,7 @@ std::vector<Result> Processor::getResults() const {
+     return m_results;
+ }
+ 
+-void    Processor::reset(    ) {
++void Processor::reset() {
+     m_isInitialized = false;
+     m_results.clear();
+     m_logger.log("Processor reset.");
+diff --git a/include/processor.h b/include/processor.h
+index abcd123..efgh456 100644
+--- a/include/processor.h
++++ b/include/processor.h
+@@ -12,25 +12,25 @@ namespace MyProject {
+ 
+ class Processor {
+ public:
+-    explicit Processor(const Config& config);
+-    ~Processor() =    
+-    default;
+-    
+-    void initialize   ();
+-    void process(const   Data& data);
+-    void shutdown   ();
+-    
+-    bool isInitialized()   const;
+-    std::vector<Result>   getResults() const;
+-    void   reset();
+-    
++    explicit Processor(const Config& config);
++    ~Processor() = default;
++
++    void initialize();
++    void process(const Data& data);
++    void shutdown();
++
++    bool isInitialized() const;
++    std::vector<Result> getResults() const;
++    void reset();
++
+ private:
+-    bool     m_isInitialized;
+-       Config m_config;
+-      Calculator m_calculator;
+-     Logger m_logger;
+-     std::vector<Result> m_results;
++    bool m_isInitialized;
++    Config m_config;
++    Calculator m_calculator;
++    Logger m_logger;
++    std::vector<Result> m_results;
+ };
+ 
+-} // namespace MyProject
++}  // namespace MyProject
+ 
+ #endif // PROCESSOR_H
